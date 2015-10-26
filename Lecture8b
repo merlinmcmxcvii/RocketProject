@@ -41,25 +41,26 @@ print("the model started running at time:  " + timestamp + "  (YearMoDa-HrMnSc)"
 
 ##  WE INCLUDE HERE ALL INPUT PARAMETERS:
 
-g = 9.81 # (m/s^2)                           # roughly constant acceleration due to gravity on earth's surface
+g = -9.81 # (m/s^2)                           # roughly constant acceleration due to gravity on earth's surface
 mass0 = 0.10 # (kg)                          # initial mass of object
 area = 0.01 # (m^2)                          # cross-sectional area
 rho = 1.225 # (kg/m^3)                       # density of fluid (approximate density of air)
 Cd = 0.5 # (dimensionless)                   # drag coefficient
-dt = 0.001 # (s)                             # time step
-duration = 100 # (s)                         # total time for simulation
+dt = 0.001 # (s)                              # time step
+duration = 200 # (s)                          # total time for simulation
 z0 = 0 # (m)                                 # initial height
 v0 = 0 # (m/s)                               # initial velocity (vertical direction)
-vrel = 25 #(m/s)                             # velocity of mass relative to the rocket
+vrel = 50 #(m/s)                             # velocity of mass relative to the rocket
 beta = 0.010 #(kg/s)                         # dm/dt
 tlater = 5 #(s)                              # thrust time, beta goes to zero afterwards
+t0 = 0 #(s)                                  # starting time
 
 # to save input paramters, we first create an array of them all named "parameters"
-parameters = g, mass0, area, rho, Cd, dt, duration, z0, v0, vrel, beta, tlater
+parameters = g, mass0, area, rho, Cd, dt, duration, z0, v0, vrel, beta, tlater, t0
 # here, we create a text file name including the timestamp
 path_parameters = os.path.join(dest_dir, timestamp + 'parameters_used.txt')  
 # here, we save the input parameters in this text file in the previously created sub-folder "data":
-numpy.savetxt(path_parameters, parameters, header='g, mass0, area, rho, Cd, dt, duration, z0 initial height, v0 initial velocity, vrel, beta, tlater  : All Dimensions SI Units !')
+numpy.savetxt(path_parameters, parameters, header='g, mass0, area, rho, Cd, dt, duration, z0 initial height, v0 initial velocity, vrel, beta, tlater, t0  : All Dimensions SI Units !')
 
 ## SETTING UP ARRAYS FOR:  time, z, v, & a
 
@@ -74,15 +75,17 @@ a = numpy.zeros(timesteps+1,dtype='d')
 F = numpy.zeros(timesteps+1,dtype='d')
 v = numpy.zeros(timesteps+1,dtype='d')
 z = numpy.zeros(timesteps+1,dtype='d')
+t = numpy.zeros(timesteps+1,dtype='d')
 # note that the data type is 'd', meaning it's a real number with "double" precision
 # double precision essentially means that the computer keeps lots of significant digits in 
 # its calculations to help prevent rounding errors
 
 mass[0] = mass0
-F[0] = - mass[0]*g - 0.5*rho*Cd*area*v[0]*abs(v[0]) + vrel*beta
+F[0] = mass[0]*g - 0.5*rho*Cd*area*v[0]*abs(v[0]) + vrel*beta
 a[0] = F[0]/mass[0]
 v[0] = v0
 z[0] = z0
+t[0] = t0 
  
 
 ##  NUMERICAL INTEGRATION:
@@ -90,12 +93,18 @@ z[0] = z0
 # in order to calculate time, z, v, & a until the object lands, the array index j is initialized to zero,
 # and j is incremented by one until the object's height ceases to be higher than ground level: z[j] < 0
 for j in numpy.arange(timesteps) :
-    mass[j+1] = mass[j] - beta*dt
-    F[j+1] = - mass[j+1]*g - 0.5*rho*Cd*area*v[j+1]*abs(v[j+1]) + vrel*beta  
+    if t[j] < tlater:
+        mass[j+1] = mass[j] - beta*dt
+    else:
+        mass[j+1] = mass[j]
+    F[j+1] = mass[j+1]*g - 0.5*rho*Cd*area*v[j+1]*abs(v[j+1]) + vrel*beta  
     a[j+1] = F[j+1]/mass[j+1]
     v[j+1] = v[j] + dt*a[j]   
     z[j+1] = z[j] + dt*v[j] + dt*dt*a[j]/2
-    if z[j] < 0 or j==timesteps :
+    t[j+1] = t[j] + dt
+    if j==timesteps :
+        break
+    if z[j] > 0 :
         break
 
 # this command allows us to see how many steps were calculated
