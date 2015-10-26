@@ -6,10 +6,6 @@ This is a temporary script file.
 """
 
 
-# the hash tells Python to ignore the text in the subsequent line
-# thus we can make comments to ourselves, colleagues, and friends (Hi Mom!)
-# to explain the purpose of the command lines in our program
-
 # this is a function that tells Python to print the program directory path "__file__"
 print(__file__)
 
@@ -41,19 +37,19 @@ print("the model started running at time:  " + timestamp + "  (YearMoDa-HrMnSc)"
 
 ##  WE INCLUDE HERE ALL INPUT PARAMETERS:
 
-g = -9.81 # (m/s^2)                           # roughly constant acceleration due to gravity on earth's surface
+g = -9.81 # (m/s^2)                          # roughly constant acceleration due to gravity on earth's surface
 mass0 = 0.10 # (kg)                          # initial mass of object
 area = 0.01 # (m^2)                          # cross-sectional area
 rho = 1.225 # (kg/m^3)                       # density of fluid (approximate density of air)
 Cd = 0.5 # (dimensionless)                   # drag coefficient
-dt = 0.001 # (s)                              # time step
-duration = 200 # (s)                          # total time for simulation
+dt = 0.001 # (s)                             # time step
+duration = 200 # (s)                         # total time for simulation
 z0 = 0 # (m)                                 # initial height
 v0 = 0 # (m/s)                               # initial velocity (vertical direction)
 vrel = 50 #(m/s)                             # velocity of mass relative to the rocket
 beta = 0.010 #(kg/s)                         # dm/dt
-tlater = 5 #(s)                              # thrust time, beta goes to zero afterwards
-t0 = 0 #(s)                                  # starting time
+tlater = 5 # (s)                             # thrust time, beta goes to zero afterwards
+t0 = 0 # (s)                                 # starting time
 
 # to save input paramters, we first create an array of them all named "parameters"
 parameters = g, mass0, area, rho, Cd, dt, duration, z0, v0, vrel, beta, tlater, t0
@@ -146,7 +142,8 @@ pylab.savefig(path_figures)
 pylab.show()
 
 #  NOW WE SAVE THE CALCULATED DATA:  first creating an multi-row array (matrix) of:  time, z, v, & a
-dataarray=numpy.array([time, z, v, a]).T            # the .T transposes the data, turning rows into columns
+dataarray=numpy.array([time, z, v, a]).T            
+# the .T transposes the data, turning rows into columns
 # here, we create a data file name including the timestamp
 path_dataarray = os.path.join(dest_dir, timestamp + 'data_array.txt')
 # here, we save the data array to this .txt file in the previously created sub-folder "data":
