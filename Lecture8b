@@ -1,41 +1,22 @@
-# -*- coding: utf-8 -*-
-"""
-Spyder Editor
 
-This is a temporary script file.
-"""
-
-
-# this is a function that tells Python to print the program directory path "__file__"
 print(__file__)
-
-# here, we import "modules" or certain functions from modules.  Modules are extra libraries 
-# of nifty functions which we can then use in our program.
 import numpy
 import pylab
 from datetime import datetime
 import os
-
-# here, we create a new folder to store input and output data, can name that 
-# subfolder "data"
 script_dir = os.path.dirname(os.path.abspath(__file__))
 dest_dir = os.path.join(script_dir, 'data')
 try:
     os.makedirs(dest_dir)
 except OSError:
-    pass # this line allows Python to ignore an error which would come 
-    # if the folder already exists
-
-pylab.clf()   # this function clears any previously open figure from desktop
-
-# this function creates a string of characters for the current date and time.  
+    pass 
+pylab.clf() 
 timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")   
-# example:  The Prince song refers to timestamp=19991231-235959  :)
 
 print("the model started running at time:  " + timestamp + "  (YearMoDa-HrMnSc)")
 
 
-##  WE INCLUDE HERE ALL INPUT PARAMETERS:
+## Parameters
 
 g = -9.81 # (m/s^2)                          # roughly constant acceleration due to gravity on earth's surface
 mass0 = 0.10 # (kg)                          # initial mass of object
@@ -51,20 +32,11 @@ beta = 0.010 #(kg/s)                         # dm/dt
 tlater = 5 # (s)                             # thrust time, beta goes to zero afterwards
 t0 = 0 # (s)                                 # starting time
 
-# to save input paramters, we first create an array of them all named "parameters"
 parameters = g, mass0, area, rho, Cd, dt, duration, z0, v0, vrel, beta, tlater, t0
-# here, we create a text file name including the timestamp
 path_parameters = os.path.join(dest_dir, timestamp + 'parameters_used.txt')  
-# here, we save the input parameters in this text file in the previously created sub-folder "data":
 numpy.savetxt(path_parameters, parameters, header='g, mass0, area, rho, Cd, dt, duration, z0 initial height, v0 initial velocity, vrel, beta, tlater, t0  : All Dimensions SI Units !')
 
-## SETTING UP ARRAYS FOR:  time, z, v, & a
-
-# by dividing the intended total simulation time by the integrating time step, we find the total number of steps
 timesteps = numpy.int(duration/dt)              
-# since Python arrays begin with position zero, for example:  first time[0] then time[1] then time[2] etc,
-# we make arrays (timesteps+1) units long,
-# and for starters we create these arrays to be full of the value zero by using the numpy.zeros() function:
 time = numpy.arange(timesteps+1,dtype='d')*dt 
 mass = numpy.zeros(timesteps+1,dtype='d')
 a = numpy.zeros(timesteps+1,dtype='d')
@@ -72,9 +44,6 @@ F = numpy.zeros(timesteps+1,dtype='d')
 v = numpy.zeros(timesteps+1,dtype='d')
 z = numpy.zeros(timesteps+1,dtype='d')
 t = numpy.zeros(timesteps+1,dtype='d')
-# note that the data type is 'd', meaning it's a real number with "double" precision
-# double precision essentially means that the computer keeps lots of significant digits in 
-# its calculations to help prevent rounding errors
 
 mass[0] = mass0
 F[0] = mass[0]*g - 0.5*rho*Cd*area*v[0]*abs(v[0]) + vrel*beta
@@ -83,68 +52,58 @@ v[0] = v0
 z[0] = z0
 t[0] = t0 
  
-
-##  NUMERICAL INTEGRATION:
-# the following "for loop" repeats the commands for numerical integration and calculating the current force
-# in order to calculate time, z, v, & a until the object lands, the array index j is initialized to zero,
-# and j is incremented by one until the object's height ceases to be higher than ground level: z[j] < 0
 for j in numpy.arange(timesteps) :
     if t[j] < tlater:
         mass[j+1] = mass[j] - beta*dt
     else:
         mass[j+1] = mass[j]
-    F[j+1] = mass[j+1]*g - 0.5*rho*Cd*area*v[j+1]*abs(v[j+1]) + vrel*beta  
+    F[j+1] = - mass[j+1]*g + 0.5*rho*Cd*area*v[j+1]*abs(v[j+1]) - vrel*beta  
     a[j+1] = F[j+1]/mass[j+1]
     v[j+1] = v[j] + dt*a[j]   
     z[j+1] = z[j] + dt*v[j] + dt*dt*a[j]/2
     t[j+1] = t[j] + dt
     if j==timesteps :
         break
-    if z[j] > 0 :
-        break
+    if z[j] < -1 :
+       a[j] = 0
+       v[j] = 0
+       z[j] = 0
+# z[j] is slightly smaller than 0 at timesteps=0 
+# assumed that the collision with the ground is completely inelastic      
+   
 
-# this command allows us to see how many steps were calculated
+
 print("last array position calculated = " + str(j))
-#  since j is an integer value, Python needs us to first turn it into a character string in order to group 
-# (concatenate) it along with our string of words
 
-# here, we resize to delete the extra zeros at the end of all arrays
 z.resize(j+1)
 v.resize(j+1)
 a.resize(j+1)
 F.resize(j+1)
 time.resize(j+1)
 
-# create height subplot
+# Height subplot
 ax1=pylab.subplot(3,1,1)
 pylab.plot(time,z,'k*')
 pylab.xlabel('time (s)')
 pylab.ylabel('height (m)')
 
-#create velocity subplot
+# Velocity subplot
 ax2=pylab.subplot(3,1,2)
 pylab.plot(time,v,'k*')
 pylab.xlabel('time (s)')
 pylab.ylabel('velocity (m/s)')
 
-#create acceleration subplot
+# Acceleration subplot
 ax3=pylab.subplot(3,1,3)
 pylab.plot(time,a,'k*')
 pylab.xlabel('time (s)')
 pylab.ylabel('acceleration (m/s$^2$)')
 
-# here, we create a plot file name including the timestamp
 path_figures = os.path.join(dest_dir, timestamp + 'freefall_wDrag.png')
-# here, we save the plot (with all three subplots) this .png file in the previously created sub-folder "data":
 pylab.savefig(path_figures)
-
-# here, we ask Python to display the plot
 pylab.show()
 
-#  NOW WE SAVE THE CALCULATED DATA:  first creating an multi-row array (matrix) of:  time, z, v, & a
+
 dataarray=numpy.array([time, z, v, a]).T            
-# the .T transposes the data, turning rows into columns
-# here, we create a data file name including the timestamp
 path_dataarray = os.path.join(dest_dir, timestamp + 'data_array.txt')
-# here, we save the data array to this .txt file in the previously created sub-folder "data":
 numpy.savetxt(path_dataarray, dataarray, header='time, z, v, a')
