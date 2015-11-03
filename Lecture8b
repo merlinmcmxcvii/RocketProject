@@ -19,8 +19,8 @@ print("the model started running at time:  " + timestamp + "  (YearMoDa-HrMnSc)"
 ## Parameters
 
 g = -9.81 # (m/s^2)                          # roughly constant acceleration due to gravity on earth's surface
-mass0 = 0.10 # (kg)                          # initial mass of object
-area = 0.01 # (m^2)                          # cross-sectional area
+mass0 = 0.289 # (kg)                          # initial mass of object
+area = 0.038 # (m^2)                         # cross-sectional area
 rho = 1.225 # (kg/m^3)                       # density of fluid (approximate density of air)
 Cd = 0.5 # (dimensionless)                   # drag coefficient
 dt = 0.001 # (s)                             # time step
@@ -31,6 +31,14 @@ vrel = 50 #(m/s)                             # velocity of mass relative to the 
 beta = 0.010 #(kg/s)                         # dm/dt
 tlater = 5 # (s)                             # thrust time, beta goes to zero afterwards
 t0 = 0 # (s)                                 # starting time
+hr = .15 #Initial height
+n = 0.164 #.5 liters air at 8 bar 293K
+r = 8.314 #J/K.mol
+Vw = 0.001 #meter cubed
+rhow = 1000 # K/m^3 density water
+rhoa = 1.2 #K/m^3 density air
+T = 293 #K temperature 
+Ab = 0.002 #area of the bottle opening
 
 parameters = g, mass0, area, rho, Cd, dt, duration, z0, v0, vrel, beta, tlater, t0
 path_parameters = os.path.join(dest_dir, timestamp + 'parameters_used.txt')  
