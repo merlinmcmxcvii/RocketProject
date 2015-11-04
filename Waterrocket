@@ -28,8 +28,8 @@ g = 9.81 # (m/s^2)                          # roughly constant acceleration due 
 area = 0.01 # (m^2)                          # cross-sectional area
 rho = 1.225 # (kg/m^3)                       # density of fluid (approximate density of air)
 Cd = 0.5 # (dimensionless)                   # drag coefficient
-dt = 0.001 # (s)                             # time step
-duration = 200 # (s)                         # total time for simulation
+dt = 0.0001 # (s)                             # time step
+duration = 20 # (s)                         # total time for simulation
 z0 = 0 # (m)                                 # initial height
 v0 = 0 # (m/s)                               # initial velocity (vertical direction)
 vrel = 50 #(m/s)                             # velocity of mass relative to the rocket
@@ -77,7 +77,7 @@ Vw = numpy.zeros(timesteps+1,dtype='d')
 h = numpy.zeros(timesteps+1,dtype='d')
 
 mass[0] = massr + massw0
-F[0] = mass[0]*g + 0.5*rho*Cd*area*v[0]*abs(v[0]) - vrel[0]*beta[0] 
+F[0] = - mass[0]*g - 0.5*rho*Cd*area*v[0]*abs(v[0]) + vrel[0]*beta[0] 
 a[0] = F[0]/mass[0]
 v[0] = v0
 z[0] = z0
@@ -98,21 +98,21 @@ for j in numpy.arange(timesteps) :
         Vair[j+1] = Vbottle - Vw[j+1]
         Pair[j+1] = n/Vair[j+1]
         h[j+1] = Vw[j+1]/Area   
-        vrel[j+1] = (2*  (Pair[j+1]-P0 + g*rhow*h[j+1])   /   (rhow*(1-  (Ab**2)  / (Area**2) )))**0.5
+        vrel[j+1] = (2*  (Pair[j+1]-P0 + (g+a[j])*rhow*h[j+1])   /   (rhow*(1-  (Ab**2)  / (Area**2) )))**0.5
         mass[j+1] = mass[j] - beta[j+1]*dt + massr
     else:
         mass[j+1] = massr
-    F[j+1] = mass[j+1]*g + 0.5*rho*Cd*area*v[j+1]*abs(v[j+1]) - vrel[j+1]*beta[j+1]  
+    F[j+1] = - mass[j+1]*g - 0.5*rho*Cd*area*v[j+1]*abs(v[j+1]) + vrel[j+1]*beta[j+1]  
     a[j+1] = F[j+1]/mass[j+1]
     v[j+1] = v[j] + dt*a[j]   
     z[j+1] = z[j] + dt*v[j] + dt*dt*a[j]/2
     t[j+1] = t[j] + dt
     if j==timesteps :
         break
-   # if z[j] < 0 and j > 0:
-    #   a[j] = 0
-    #   v[j] = 0
-    #   z[j] = 0
+    if z[j] < 0 and j > 0:
+       a[j] = 0
+       v[j] = 0
+       z[j] = 0
 # z[j] is slightly smaller than 0 at timesteps=0 
 # assumed that the collision with the ground is completely inelastic      
    
