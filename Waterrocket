@@ -1,9 +1,15 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Nov  4 13:40:56 2015
+
+@author: merlijn
+"""
+
 print(__file__)
 import numpy
 import pylab
 from datetime import datetime
 import os
-from math import sqrt
 script_dir = os.path.dirname(os.path.abspath(__file__))
 dest_dir = os.path.join(script_dir, 'data')
 try:
@@ -18,85 +24,96 @@ print("the model started running at time:  " + timestamp + "  (YearMoDa-HrMnSc)"
 
 ## Parameters
 
-g = -9.81 # (m/s^2)                          # roughly constant acceleration due to gravity on earth's surface
-massr = 0.289 # (kg)                         # initial mass of rocket
+g = 9.81 # (m/s^2)                          # roughly constant acceleration due to gravity on earth's surface
+area = 0.01 # (m^2)                          # cross-sectional area
+rho = 1.225 # (kg/m^3)                       # density of fluid (approximate density of air)
 Cd = 0.5 # (dimensionless)                   # drag coefficient
 dt = 0.001 # (s)                             # time step
 duration = 200 # (s)                         # total time for simulation
 z0 = 0 # (m)                                 # initial height
 v0 = 0 # (m/s)                               # initial velocity (vertical direction)
+vrel = 50 #(m/s)                             # velocity of mass relative to the rocket
+beta = 0.010 #(kg/s)                         # dm/dt
+tlater = 5 # (s)                             # thrust time, beta goes to zero afterwards
 t0 = 0 # (s)                                 # starting time
-hr = .15 # m                                 # height rod in bottle 
-hw = hr # m                                  # height of the water level in the bottle
-n = 0.164 # mole                             # .5 liters air at 8E5 Pa 293K
-R = 8.314 # J/K.mol
-Vair0 = 0.0005 # m^3                         # initial volume air
-Vtot = 0.0015 # m^3                          # total volume of the bottle
+rhow = 1000 #kg/m^3                          # density water
+Vair0 = 0.0005 # m^3
+Pair0 = 800000 # N/m
+massw0 = 0.7 #kg
+Ab = 0.002 #m^3
+Area = 0.038 #m^3
+beta0 = 0
+vrel0 = 0
+massr = 0.289 # kg
+n = 400
+Vw0 = 0.0007 # m^3                          # total volume of the bottle
 rhow = 1000 # K/m^3                          # density water
-rhoa = 1.225 #K/m^3                            # density air
-T = 293 #K                                   # temperature
+rhoa = 1.225 #K/m^3                            # density air                                 # temperature
 Area = 0.038 # (m^2)                         # cross-sectional area 
 Ab = 0.002 # m^3                             # area of the bottle opening
 P0 =  101325 # Pa                            # normal atmospheric pressure
 Pair0 = 800000 # Pa                          # air pressure inside the bottle, 8 bar
+h0 = 0.18
+Vbottle = 0.001
 
-#parameters = g, mass0, Area, rho, Cd, dt, duration, z0, v0, vrel, beta, tlater, t0
+#parameters = g, mass0, area, rho, Cd, dt, duration, z0, v0, vrel, beta, tlater, t0
 #path_parameters = os.path.join(dest_dir, timestamp + 'parameters_used.txt')  
-# numpy.savetxt(path_parameters, parameters, header='g, mass0, area, rho, Cd, dt, duration, z0 initial height, v0 initial velocity, vrel, beta, tlater, t0  : All Dimensions SI Units !')
+#numpy.savetxt(path_parameters, parameters, header='g, mass0, area, rho, Cd, dt, duration, z0 initial height, v0 initial velocity, vrel, beta, tlater, t0  : All Dimensions SI Units !')
 
 timesteps = numpy.int(duration/dt)              
 time = numpy.arange(timesteps+1,dtype='d')*dt 
+mass = numpy.zeros(timesteps+1,dtype='d')
 a = numpy.zeros(timesteps+1,dtype='d')
 F = numpy.zeros(timesteps+1,dtype='d')
 v = numpy.zeros(timesteps+1,dtype='d')
 z = numpy.zeros(timesteps+1,dtype='d')
 t = numpy.zeros(timesteps+1,dtype='d')
-mass = numpy.zeros(timesteps+1,dtype='d')
-h = numpy.zeros(timesteps+1,dtype='d')
+beta = numpy.zeros(timesteps+1,dtype='d')
 Vair = numpy.zeros(timesteps+1,dtype='d')
 Pair = numpy.zeros(timesteps+1,dtype='d')
 vrel = numpy.zeros(timesteps+1,dtype='d')
-Fthrust = numpy.zeros(timesteps+1,dtype='d')
+massw = numpy.zeros(timesteps+1,dtype='d')
+Vw = numpy.zeros(timesteps+1,dtype='d')
+h = numpy.zeros(timesteps+1,dtype='d')
 
-mass[0] = massr + rhow*h[0]*Area
+mass[0] = massr + massw0
+F[0] = mass[0]*g + 0.5*rho*Cd*area*v[0]*abs(v[0]) - vrel[0]*beta[0] 
 a[0] = F[0]/mass[0]
-F[0] = mass[0]/a[0]
 v[0] = v0
 z[0] = z0
-t[0] = t0 
-h[0] = hr
+t[0] = t0
+beta[0] = beta0
 Vair[0] = Vair0
 Pair[0] = Pair0
-vrel[0] = 0
-Fthrust[0] = 0
-z[0] = 0
- 
+vrel[0] = vrel0
+massw[0] = massw0
+Vw[0] = Vw0
+h[0] = h0
+
 for j in numpy.arange(timesteps) :
-    h[j+1] = h[j] - (vrel[j]*Ab*dt)/(Area) # heigth of the water inside the bottle
-    Vair[j+1] = Vtot - Area*h[j+1] # volume of the bottle minus the volume of the water inside the bottle
-    Pair[j+1] = (n*R*T)/(Vair[j+1]) # ideal gass law
-    mass[j+1] = massr + Area*h[j+1]*rhow # mass of the rocket plus the mass of the water inside the rocket
-    if z[j+1] <= hr:
-        Fthrust[j+1] = Pair[j+1] * Area 
-    elif h[j+1] >= 0:
-        vrel[j+1] = sqrt((2*(Pair[j+1] - P0 + g*rhow*h[j+1]))/(rhow*(1-(Ab**2)/(Area**2)))) #Bernoulli's equation and continuity principle
-        Fthrust[j+1] = Ab*rhow*vrel[j+1]**2 #thrust equation
-    elif Pair[j+1] > P0: 
-        Fthrust[j+1] = 2*Ab (Pair[j+1] - P0)    
+    massw[j+1] = massw[j] - beta[j]*dt
+    if massw[j+1] > 0:
+        beta[j+1] = Ab*rhow*vrel[j]        
+        Vw[j+1] = massw[j+1]/rhow
+        Vair[j+1] = Vbottle - Vw[j+1]
+        Pair[j+1] = n/Vair[j+1]
+        h[j+1] = Vw[j+1]/Area   
+        vrel[j+1] = (2*  (Pair[j+1]-P0 + g*rhow*h[j+1])   /   (rhow*(1-  (Ab**2)  / (Area**2) )))**0.5
+        mass[j+1] = mass[j] - beta[j+1]*dt + massr
     else:
-        Fthrust[j+1] = 0
-    F[j+1] = - mass[j+1]*g + 0.5*rhoa*Cd*Area*v[j+1]*abs(v[j+1]) - Fthrust[j+1]  
+        mass[j+1] = massr
+    F[j+1] = mass[j+1]*g + 0.5*rho*Cd*area*v[j+1]*abs(v[j+1]) - vrel[j+1]*beta[j+1]  
     a[j+1] = F[j+1]/mass[j+1]
     v[j+1] = v[j] + dt*a[j]   
     z[j+1] = z[j] + dt*v[j] + dt*dt*a[j]/2
     t[j+1] = t[j] + dt
     if j==timesteps :
         break
-    if z[j] < 0 and j > 0:
-       a[j] = 0
-       v[j] = 0
-       z[j] = 0
-# blub z[j] is slightly smaller than 0 at timesteps=0 
+   # if z[j] < 0 and j > 0:
+    #   a[j] = 0
+    #   v[j] = 0
+    #   z[j] = 0
+# z[j] is slightly smaller than 0 at timesteps=0 
 # assumed that the collision with the ground is completely inelastic      
    
 
