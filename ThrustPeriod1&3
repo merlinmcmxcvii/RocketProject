@@ -12,7 +12,7 @@ except OSError:
 pylab.clf() 
 timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")   
 
-print("the model started running at time:  " + timestamp + "  (YearMoDa-HrMnSc)")
+print("Model started running at time:  " + timestamp + "  (YearMoDa-HrMnSc)")
 
 
 ## Parameters
@@ -20,7 +20,7 @@ print("the model started running at time:  " + timestamp + "  (YearMoDa-HrMnSc)"
 g = 9.81 # (m/s^2)          # roughly constant acceleration due to gravity on earth's surface
 Cd = 0.5 # (dimensionless)  # drag coefficient
 dt = 0.0001 # (s)           # time step
-duration = 2 # (s)          # total time for simulation
+duration = 10 # (s)          # total time for simulation
 z0 = 0 # (m)                # initial height
 v0 = 0 # (m/s)              # initial velocity (vertical direction)
 t0 = 0 # (s)                # starting time
@@ -28,13 +28,17 @@ massr = 0.289 # (kg)        # mass rocket
 rhow = 1000 # (kg/m^3)      # density water
 massw0 = 0.3 # (kg)         # initial mass of water inside the bottle
 rhoa = 1.225 # (kg/m^3)     # density of air
-Ab = 0.0005 # (m^3)          # area of the bottlecap r \approx 0.0125
+Ab = 0.0005 # (m^3)         # area of the bottlecap r \approx 0.0125
 Area = 0.011 # (m^3)        # (initial) area of the water level and the crossectional area of the rocket. r = 0.06
 beta0 = 0 # (kg/t)          # initial dm/dt
 vrel0 = 0 # (m/s)           # initial vrel
-nkBT = 400 # (m^3*Pa)       # constant factor of the moles of air inside the rocket, the Boltzman constant and the temperature of the air
+NkBT = 20000 # (m^3*Pa)     # constant factor of the moles of air inside the rocket, the Boltzman constant and the temperature of the air
+#T = 293 # (K)               # temperature during the experiment
+#kB = 1.381*10**(−23) # (J/K)# Boltzman constant 
+#N0 = NkBT/(kB*T) # (dimonsionless) Number of air molecules inside the rocket
 P0 =  101325 # (Pa)         # normal atmospheric pressure
 Vbottle = 0.001 #(m^3)      # total volume of the bottle
+hr = 0.15 # (m)             # height of the rod inside the bottle. 
 
 #parameters = g, mass0, area, rho, Cd, dt, duration, z0, v0, vrel, beta, tlater, t0
 #path_parameters = os.path.join(dest_dir, timestamp + 'parameters_used.txt')  
@@ -71,22 +75,32 @@ Vair[0] = Vbottle - (h[0] - z[0])*Area
 Pair[0] = nkBT/Vair[0]
 h[0] = Vw[0]/Area
 Fthrust[0] = vrel[0]*beta[0]
+maxz = 0
+maxv = 0
+maxa = 0
 
 for j in numpy.arange(timesteps) :
     massw[j+1] = massw[j] - beta[j]*dt
-    if z[j] <= h[0]:
-        Vair[j+1] = Vbottle - (h[0] - z[j])*Area - Vw[0]
-        Pair[j+1] = nkBT/Vair[j+1]
-        Fthrust[j+1] = Pair[j+1]/Ab
-    if massw[j+1] > 0:
-        beta[j+1] = Ab*rhow*vrel[j]        
+    #if z[j] <= hr:                       #somehow this goes to infinity, don't know why. 
+    #    Vw[j+1] = massw[j+1]/rhow    
+    #    Vair[j+1] = Vbottle - (hr - z[j])*Area - Vw[j+1]
+    #    Pair[j+1] = NkBT/Vair[j+1]         #Thrust period 1: Pressure on rod.
+    #    Fthrust[j+1] = Pair[j+1]/Ab
+    if massw[j+1] > 0:                      #change into 'elif' if Thrust I is taken into account.
+        beta[j+1] = Ab*rhow*vrel[j]         #Thrust period 2: Water out rocket        
         Vw[j+1] = massw[j+1]/rhow
         Vair[j+1] = Vbottle - Vw[j+1]
-        Pair[j+1] = nkBT/Vair[j+1]
+        Pair[j+1] = NkBT/Vair[j+1]
         h[j+1] = Vw[j+1]/Area   
         vrel[j+1] = (2*  (Pair[j+1]-P0 + (g+a[j])*rhow*h[j+1])   /   (rhow*(1-  (Ab**2)  / (Area**2) )))**0.5
         mass[j+1] = mass[j] - beta[j+1]*dt + massr
         Fthrust[j+1] = vrel[j+1]*beta[j+1]
+    #elif Pair[j] > P0:                      #Thrust period 3: Air out rocket
+    #    vrel[j+1] = ((2*(Pair[j]-P0))/rhoa)**.5 #Exercise 61 chapter 13. Physics book.
+    #    beta[j+1] = Ab*rhoa*vrel[j+1]
+    #    Fthrust[j+1] = vrel[j+1]*beta[j+1]
+    #    Vair[j+1] = Vbottle - beta[j+1]*dt/rhoa
+    #    Pair[j+1] = nkBT/Vair[j+1]
     else:
         mass[j+1] = massr
         Fthrust[j+1] = 0
@@ -97,17 +111,26 @@ for j in numpy.arange(timesteps) :
     t[j+1] = t[j] + dt
     if j==timesteps :
         break
-    if z[j] < 0 and j > 0:
+    elif z[j] < 0 and j > 0:
        a[j] = 0
        v[j] = 0
        z[j] = 0
-    
+    if z[j+1] > maxz:
+        maxz = z[j+1]
+    if v[j+1] > maxv:
+        maxv = v[j+1]
+    if a[j+1] > maxa:
+        maxa =  a[j+1]
 # z[j] is slightly smaller than 0 at timesteps=0 
 # assumed that the collision with the ground is completely inelastic      
    
-
-
-print("last array position calculated = " + str(j))
+print (" ")
+print ("Maximum heighth: " + str(maxz) + " m")
+print ("Maximum velocity: " + str(maxv) + " m/s")
+print ("Maximum acceleration: " + str(maxa) + " m/s^2")
+print (" ")
+print("Last array position calculated = " + str(j))
+print (" ")
 
 z.resize(j+1)
 v.resize(j+1)
