@@ -1,0 +1,209 @@
+# -*- coding: utf-8 -*-
+
+'''
+This is the code of Louis Lallouette, Katherine Budeski, and Merlijn Kersten for the 
+Introduction to Physics Rocket Lab Experiment.
+
+In this programme, we calculate the flight path of a rocket. We divide our 
+parameters into normal parameters and fitting parameters: parameters that
+may be changed after we carried out the actual experiment to make our model rocket 
+fit the real-life properties of the rocket.
+
+In our programme, we used the mass of the water inside of the rocket to calculate 
+other properties, like the pressure, volume, and top-area, of the air and water
+inside of the rocket.
+
+We also wrote another programme that calculates the effect of taking a time step
+twice as small as the chosen time step. Thus, we can calculate of this changes the
+final outcome by more than 10%, e.g. if changing the timestep has a significant
+effect on the final outcome. We send this programme to you via email. 
+
+This code doesn't (yet) take the angle at which the rocket is fired into account:
+currently it assumes it is fired straight up into the air (90 degree angle with 
+the earth) 
+    It also doens't (yet) take the additional thrust force of  the escaping air out of 
+rocket after the all the water is fired out into account. (This is because at that
+moment, the air pressure inside the rocket is still higher than normal atmospheric
+pressure). However, this influence is very small so this probably wouldn't have
+a significant effect on the outcome of our model.
+
+The template for this programme was provided by dr. Forrest Bradbury, some of his
+code is still in this programme (mainly the ##MODULES ET CETERA and the ##PLOTS code). 
+Much of the other code is based on the provided template code.
+
+If you have any questions regarding this code, please feel free to contact us:
+tibestinorilsk@gmail.com
+
+Note: none of us had any experience with coding in Python when we started this 
+project. This might mean that we made some style or other errors in our Python
+language. If we did, we're very sorry and we'll try to not make them next time.
+
+'''
+
+
+## MODULES ET CETERA
+print(__file__)
+import numpy
+import pylab
+from datetime import datetime
+import os
+script_dir = os.path.dirname(os.path.abspath(__file__))
+dest_dir = os.path.join(script_dir, 'data')
+try:
+    os.makedirs(dest_dir)
+except OSError:
+    pass 
+pylab.clf() 
+timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")   
+
+print("Model started running at time:  " + timestamp + "  (YearMoDa-HrMnSc)")
+
+
+## PARAMETERS
+# First, all the normal parameters:
+g = 9.81 # (m/s^2)          # roughly constant acceleration due to gravity on earth's surface
+duration = 5 # (s)         # total time for simulation
+z0 = 0 # (m)                # initial height
+v0 = 0 # (m/s)              # initial velocity (vertical direction)
+t0 = 0 # (s)                # starting time
+massr = 0.289 # (kg)        # mass rocket
+rhow = 1000 # (kg/m^3)      # density water
+rhoa = 1.225 # (kg/m^3)     # density of air
+vrel0 = 0 # (m/s)           # initial vrel
+P0 =  101325 # (Pa)         # normal atmospheric pressure
+
+# Second, all the 'fitting' parameters, parameters that might change
+# after the actual testing of the rocket.
+Cd = 0.5 # (dimensionless)  # drag coefficient
+dt = 0.00001 # (s)           # time step
+massw0 = 0.3 # (kg)         # initial mass of water inside the bottle
+Ab = 0.0005 # (m^3)         # area of the bottlecap (r \approx 0.0125)
+Area = 0.011 # (m^3)        # (initial) area of the water level and the crossectional area of the rocket. r = 0.06
+NkBT = 100000 # (m^3*Pa)     # constant factor of the number of molecules of air inside the rocket, the Boltzman constant and the temperature of the air
+Vbottle = 0.001 #(m^3)      # total volume of the bottle
+hr = 0.15 # (m)             # height of the rod inside the bottle. 
+
+
+## Text file with all the parameters
+parameters = g, Cd, dt, duration, z0, v0, t0, massr, rhow, massw0, rhoa, Ab, Area,  vrel0, NkBT, P0, Vbottle, hr
+path_parameters = os.path.join(dest_dir, timestamp + 'parameters_used.txt')  
+numpy.savetxt(path_parameters, parameters, header='g, Cd, dt, duration, z0, v0, t0, massr, rhow, massw0, rhoa, Ab, Area, vrel0, NkBT, P0, Vbottle, hr  : All dimensions SI units !')
+
+
+## FUNCTIONS
+timesteps = numpy.int(duration/dt)              
+time = numpy.arange(timesteps+1,dtype='d')*dt 
+mass = numpy.zeros(timesteps+1,dtype='d')
+a = numpy.zeros(timesteps+1,dtype='d')
+F = numpy.zeros(timesteps+1,dtype='d')
+v = numpy.zeros(timesteps+1,dtype='d')
+z = numpy.zeros(timesteps+1,dtype='d')
+t = numpy.zeros(timesteps+1,dtype='d')
+beta = numpy.zeros(timesteps+1,dtype='d')   # beta is dm/dt
+Vair = numpy.zeros(timesteps+1,dtype='d')
+Pair = numpy.zeros(timesteps+1,dtype='d')
+vrel = numpy.zeros(timesteps+1,dtype='d')
+massw = numpy.zeros(timesteps+1,dtype='d')
+Vw = numpy.zeros(timesteps+1,dtype='d')
+h = numpy.zeros(timesteps+1,dtype='d')
+Fthrust = numpy.zeros(timesteps+1,dtype='d')
+
+
+## STARTING VALUES OF THE FUNCTIONS
+mass[0] = massr + massw0
+F[0] = - mass[0]*g - 0.5*rhoa*Cd*Area*v[0]*abs(v[0]) + vrel[0]*beta[0] 
+a[0] = F[0]/mass[0]
+v[0] = v0
+z[0] = z0
+t[0] = t0
+vrel[0] = vrel0 # 0
+beta[0] = Ab*rhow*vrel[0] # 0
+massw[0] = massw0 
+Vw[0] = massw[0]/rhow 
+Vair[0] = Vbottle - (h[0] - z[0])*Area
+Pair[0] = NkBT/Vair[0]
+h[0] = Vw[0]/Area
+Fthrust[0] = vrel[0]*beta[0]
+maxz = 0
+maxv = 0
+maxa = 0
+
+
+## ACTUAL FORMULAS
+for j in numpy.arange(timesteps) :
+    massw[j+1] = massw[j] - beta[j]*dt
+    if massw[j+1] > 0:                      # This if-loop calculates the thrust force of the water on the rocket.
+        beta[j+1] = Ab*rhow*vrel[j]         # beta is dm/dt     
+        Vw[j+1] = massw[j+1]/rhow
+        Vair[j+1] = Vbottle - Vw[j+1]
+        Pair[j+1] = NkBT/Vair[j+1]
+        h[j+1] = Vw[j+1]/Area   
+        vrel[j+1] = (2* (Pair[j+1]-P0 + (g+a[j])*rhow*h[j+1]) / (rhow*(1-(Ab**2) / (Area**2) )))**0.5 # Derived using Bernoulli's equation and the equation of continuity.
+        mass[j+1] = mass[j] - beta[j+1]*dt + massr
+        Fthrust[j+1] = vrel[j+1]*beta[j+1]
+    else:                                   # If all the water is out of the rocket (massw == 0), this loop 
+        mass[j+1] = massr
+        Fthrust[j+1] = 0
+    F[j+1] = - mass[j+1]*g - 0.5*rhoa*Cd*Area*v[j+1]*abs(v[j+1]) + Fthrust[j+1]  
+    a[j+1] = F[j+1]/mass[j+1]
+    v[j+1] = v[j] + dt*a[j]   
+    z[j+1] = z[j] + dt*v[j] + dt*dt*a[j]/2
+    t[j+1] = t[j] + dt
+    if j==timesteps :                       # This if-loop breaks the for-loop if the experiment time has ended.
+        break
+    elif z[j] < 0 and j > 0:                # This elif-loop lets a, v, and x go to 0 if the rocket hits the ground. (inelastic collision)
+       a[j] = 0
+       v[j] = 0
+       z[j] = 0
+    if z[j+1] > maxz:                       # Saves the maximum z value
+        maxz = z[j+1]
+    if v[j+1] > maxv:                       # Saves the maximum v value
+        maxv = v[j+1]
+    if a[j+1] > maxa:                       # Saves the maximum a value
+        maxa =  a[j+1]     
+
+
+## Print the maximum values for the height, velocity and acceleration:
+print (" ")
+print ("Maximum height: " + str(round(maxz, 2)) + " (m)")
+print ("Maximum velocity: " + str(round(maxv, 2)) + " (m/s)")
+print ("Maximum acceleration: " + str(round(maxa, 2)) + " (m/s^2)")
+print (" ")
+
+## prints the last array position calculated:
+print("Last array position calculated = " + str(j))
+print (" ")
+
+
+##PLOTS
+z.resize(j+1)
+v.resize(j+1)
+a.resize(j+1)
+time.resize(j+1)
+
+# Height subplot
+ax1=pylab.subplot(3,1,1)
+pylab.plot(time,z,'k*')
+pylab.xlabel('time (s)')
+pylab.ylabel('height (m)')
+
+# Velocity subplot
+ax2=pylab.subplot(3,1,2)
+pylab.plot(time,v,'k*')
+pylab.xlabel('time (s)')
+pylab.ylabel('velocity (m/s)')
+
+# Acceleration subplot
+ax3=pylab.subplot(3,1,3)
+pylab.plot(time,a,'k*')
+pylab.xlabel('time (s)')
+pylab.ylabel('acceleration (m/s$^2$)')
+
+#Saves plots
+path_figures = os.path.join(dest_dir, timestamp + 'freefall_wDrag.png')
+pylab.savefig(path_figures)
+pylab.show()
+
+dataarray=numpy.array([time, z, v, a]).T            
+path_dataarray = os.path.join(dest_dir, timestamp + 'data_array.txt')
+numpy.savetxt(path_dataarray, dataarray, header='time, z, v, a')
