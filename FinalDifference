@@ -1,0 +1,114 @@
+# -*- coding: utf-8 -*-
+
+
+"""
+This is the code of Louis Lallouette, Katherine Budeski, and Merlijn Kersten for the 
+Introduction to Physics Rocket Lab Experiment. This is not our actual code, but 
+a programme to calculate if taking a twice as small time step changes the final 
+outcome by more than 10%
+
+
+EXPLANATION OF THE CODE
+This programme calculates a function, z1, with a given timestep, dt1. It then 
+calculates a second function, z2, with half the given timestep, dt1/2 = dt2. It
+compares the outcome of the two different functions by taking the fraction
+of the two and checks of the difference between the two is not bigger than 10%. If 
+it isn't, the programme continuous and gives the maximum difference at the end 
+(currently 0), but if the difference is bigger than 10%, the programme breaks 
+and gives the timestep at which (z1/z2)-1 > 0.1 .
+
+Currently, the code works with a simple linear formula for z1 (and thus z2), but it can
+be adapted to the full rocket lab code by simply inserting that code into this
+programme. However, the code has to be adapted (it has to be edited to include new, 
+different values) and this takes a lot of time. Because our code is probably not
+yet good enough to serve as the final code for our rocket lab report, we have
+chosen to not implement the full code in this programme. We will do this for the
+final version of the code, which will be included with the rocket lab report.
+
+The template for this programme was provided by dr. Forrest Bradbury, some of his
+code is still in this programme (mainly the ##MODULES ET CETERA). 
+Much of the other code is based on the provided template code.
+
+If you have any questions regarding this code, please feel free to contact us:
+tibestinorilsk@gmail.com  
+
+Note: none of us had any experience with coding in Python when we started this 
+project. This might mean that we made some style or other errors in our Python
+language. If we did, we're very sorry and we'll try to not make them next time.
+"""
+
+
+
+
+
+##STANDARD MODULES ET CETERA
+print(__file__)
+import numpy
+import pylab
+from datetime import datetime
+import os
+script_dir = os.path.dirname(os.path.abspath(__file__))
+dest_dir = os.path.join(script_dir, 'data')
+try:
+    os.makedirs(dest_dir)
+except OSError:
+    pass 
+pylab.clf() 
+timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")   
+print " "
+print("Model started running at time:  " + timestamp + "  (YYYYMMDD - HHMMSS)")
+
+
+#PARAMETERS
+duration = 20   #Chosen duration
+dt1 = 2         #Chosen timestep
+dt2 = dt1/2
+#All the other variables needed to calculate the flight path
+
+
+##FUNCTIONS
+timesteps1 = numpy.int(duration/dt2) 
+timesteps2 = numpy.int(duration/dt2)           
+z1 = numpy.arange(timesteps1+1,dtype='d')*dt1 #Calculates the flight path with the chosen timestep
+z2 = numpy.arange(timesteps2+1,dtype='d')*dt2 #Calculates the flight path with half the chosen timestep
+#All the other functions needed to calculate the flight path
+
+
+##STARTING VALUES
+z2[0] = 0
+z1[0] = 0
+#All the other starting values for the functions needed to calculate the flight path
+
+
+##FORMULAS
+for j in numpy.arange(timesteps1):
+    #All the calculations needed to calculate z1    
+    z1[j+1] = z1[j] + dt1    #Calculates the 'flight path' with the chosen time step, dt1
+    if j == timesteps1:
+        break
+for i in numpy.arange(timesteps2):
+    #All the calculations needed to calculate z2
+    z2[i+1] = z2[i] + dt2   #Calculates the 'flight path' with half the chosen time step, dt2
+    if i == timesteps2:
+        break
+    
+maxdifference = 0  
+for k in numpy.arange(timesteps2):
+    j = k
+    i = 2*k
+    difference = abs(z1[j]/z2[i]) - 1
+    if difference > 0.1:
+        print " "        
+        print "The difference is bigger than 10% at timestep " + str(k)
+        break
+    elif difference > maxdifference:
+        maxdifference = difference
+    if k == (timesteps2-10):
+        #The programme cannot calculate all the differences for the whole programme, but this is not 
+        #a problem because z = 0 after the rocket has landed.
+        print " "
+        print "The difference between z1 and z2 is never bigger than 10%."
+        print "The maximum difference is: " + str(maxdifference)
+        print " "
+        break
+
