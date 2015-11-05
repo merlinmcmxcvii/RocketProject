@@ -75,7 +75,7 @@ beta[0] = Ab*rhow*vrel[0] # 0
 massw[0] = massw0 
 Vw[0] = massw[0]/rhow 
 Vair[0] = Vbottle - (h[0] - z[0])*Area
-Pair[0] = nkBT/Vair[0]
+Pair[0] = NkBT/Vair[0]
 h[0] = Vw[0]/Area
 Fthrust[0] = vrel[0]*beta[0]
 maxz = 0
@@ -98,12 +98,6 @@ for j in numpy.arange(timesteps) :
         vrel[j+1] = (2*  (Pair[j+1]-P0 + (g+a[j])*rhow*h[j+1])   /   (rhow*(1-  (Ab**2)  / (Area**2) )))**0.5
         mass[j+1] = mass[j] - beta[j+1]*dt + massr
         Fthrust[j+1] = vrel[j+1]*beta[j+1]
-    #elif Pair[j] > P0:                      #Thrust period 3: Air out rocket
-    #    vrel[j+1] = ((2*(Pair[j]-P0))/rhoa)**.5 #Exercise 61 chapter 13. Physics book.
-    #    beta[j+1] = Ab*rhoa*vrel[j+1]
-    #    Fthrust[j+1] = vrel[j+1]*beta[j+1]
-    #    Vair[j+1] = Vbottle - beta[j+1]*dt/rhoa
-    #    Pair[j+1] = nkBT/Vair[j+1]
     else:
         mass[j+1] = massr
         Fthrust[j+1] = 0
@@ -126,37 +120,9 @@ for j in numpy.arange(timesteps) :
         maxa =  a[j+1]
 # z[j] is slightly smaller than 0 at timesteps=0 
 # assumed that the collision with the ground is completely inelastic      
- 
-for j in numpy.arange(timesteps) :
-    massw[j+1] = massw[j] - beta[j]*dt
-    if massw[j+1] > 0:
-        beta[j+1] = Ab*rhow*vrel[j]        
-        Vw[j+1] = massw[j+1]/rhow
-        Vair[j+1] = Vbottle - Vw[j+1]
-        Pair[j+1] = n/Vair[j+1]
-        h[j+1] = Vw[j+1]/Area   
-        vrel[j+1] = (2*  (Pair[j+1]-P0 + (g+a[j])*rhow*h[j+1])   /   (rhow*(1-  (Ab**2)  / (Area**2) )))**0.5
-        mass[j+1] = mass[j] - beta[j+1]*dt + massr
-    else:
-        mass[j+1] = massr
-    F[j+1] = - mass[j+1]*g - 0.5*rhoa*Cd*Area*v[j+1]*abs(v[j+1]) + vrel[j+1]*beta[j+1]  
-    a[j+1] = F[j+1]/mass[j+1]
-    v[j+1] = v[j] + dt*a[j]   
-    z[j+1] = z[j] + dt*v[j] + dt*dt*a[j]/2
-    t[j+1] = t[j] + dt
-    if j==timesteps :
-        break
-    if z[j] < 0 and j > 0:
-       a[j] = 0
-       v[j] = 0
-       z[j] = 0
-# z[j] is slightly smaller than 0 at timesteps=0 
-# assumed that the collision with the ground is completely inelastic      
 
- 
- 
- 
-   
+
+
 print (" ")
 print ("Maximum heighth: " + str(maxz) + " m")
 print ("Maximum velocity: " + str(maxv) + " m/s")
@@ -164,52 +130,6 @@ print ("Maximum acceleration: " + str(maxa) + " m/s^2")
 print (" ")
 print("Last array position calculated = " + str(j))
 print (" ")
-
-z.resize(j+1)
-v.resize(j+1)
-a.resize(j+1)
-F.resize(j+1)
-time.resize(j+1)
-
-# Height subplot
-ax1=pylab.subplot(3,1,1)
-pylab.plot(time,z,'k*')
-pylab.xlabel('time (s)')
-pylab.ylabel('height (m)')
-
-# Velocity subplot
-ax2=pylab.subplot(3,1,2)
-pylab.plot(time,v,'k*')
-pylab.xlabel('time (s)')
-pylab.ylabel('velocity (m/s)')
-
-# Acceleration subplot
-ax3=pylab.subplot(3,1,3)
-pylab.plot(time,a,'k*')
-pylab.xlabel('time (s)')
-pylab.ylabel('acceleration (m/s$^2$)')
-
-path_figures = os.path.join(dest_dir, timestamp + 'freefall_wDrag.png')
-pylab.savefig(path_figures)
-pylab.show()
-
-
-dataarray=numpy.array([time, z, v, a]).T            
-path_dataarray = os.path.join(dest_dir, timestamp + 'data_array.txt')
-numpy.savetxt(path_dataarray, dataarray, header='time, z, v, a')
-
-
-
-____________________________________________________________________________________________________________________
-
-
-
-
-
-   
-
-
-print("last array position calculated = " + str(j))
 
 z.resize(j+1)
 v.resize(j+1)
