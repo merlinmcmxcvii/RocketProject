@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Nov  4 13:40:56 2015
-
-@author: merlijn
-"""
 
 print(__file__)
 import numpy
