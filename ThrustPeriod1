@@ -1,0 +1,143 @@
+print(__file__)
+import numpy
+import pylab
+from datetime import datetime
+import os
+script_dir = os.path.dirname(os.path.abspath(__file__))
+dest_dir = os.path.join(script_dir, 'data')
+try:
+    os.makedirs(dest_dir)
+except OSError:
+    pass 
+pylab.clf() 
+timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")   
+
+print("the model started running at time:  " + timestamp + "  (YearMoDa-HrMnSc)")
+
+
+## Parameters
+
+g = 9.81 # (m/s^2)          # roughly constant acceleration due to gravity on earth's surface
+Cd = 0.5 # (dimensionless)  # drag coefficient
+dt = 0.0001 # (s)           # time step
+duration = 2 # (s)          # total time for simulation
+z0 = 0 # (m)                # initial height
+v0 = 0 # (m/s)              # initial velocity (vertical direction)
+t0 = 0 # (s)                # starting time
+massr = 0.289 # (kg)        # mass rocket
+rhow = 1000 # (kg/m^3)      # density water
+massw0 = 0.3 # (kg)         # initial mass of water inside the bottle
+rhoa = 1.225 # (kg/m^3)     # density of air
+Ab = 0.0005 # (m^3)          # area of the bottlecap r \approx 0.0125
+Area = 0.011 # (m^3)        # (initial) area of the water level and the crossectional area of the rocket. r = 0.06
+beta0 = 0 # (kg/t)          # initial dm/dt
+vrel0 = 0 # (m/s)           # initial vrel
+nkBT = 400 # (m^3*Pa)       # constant factor of the moles of air inside the rocket, the Boltzman constant and the temperature of the air
+P0 =  101325 # (Pa)         # normal atmospheric pressure
+Vbottle = 0.001 #(m^3)      # total volume of the bottle
+
+#parameters = g, mass0, area, rho, Cd, dt, duration, z0, v0, vrel, beta, tlater, t0
+#path_parameters = os.path.join(dest_dir, timestamp + 'parameters_used.txt')  
+#numpy.savetxt(path_parameters, parameters, header='g, mass0, area, rho, Cd, dt, duration, z0 initial height, v0 initial velocity, vrel, beta, tlater, t0  : All Dimensions SI Units !')
+
+timesteps = numpy.int(duration/dt)              
+time = numpy.arange(timesteps+1,dtype='d')*dt 
+mass = numpy.zeros(timesteps+1,dtype='d')
+a = numpy.zeros(timesteps+1,dtype='d')
+F = numpy.zeros(timesteps+1,dtype='d')
+v = numpy.zeros(timesteps+1,dtype='d')
+z = numpy.zeros(timesteps+1,dtype='d')
+t = numpy.zeros(timesteps+1,dtype='d')
+beta = numpy.zeros(timesteps+1,dtype='d')
+Vair = numpy.zeros(timesteps+1,dtype='d')
+Pair = numpy.zeros(timesteps+1,dtype='d')
+vrel = numpy.zeros(timesteps+1,dtype='d')
+massw = numpy.zeros(timesteps+1,dtype='d')
+Vw = numpy.zeros(timesteps+1,dtype='d')
+h = numpy.zeros(timesteps+1,dtype='d')
+Fthrust = numpy.zeros(timesteps+1,dtype='d')
+
+mass[0] = massr + massw0
+F[0] = - mass[0]*g - 0.5*rhoa*Cd*Area*v[0]*abs(v[0]) + vrel[0]*beta[0] 
+a[0] = F[0]/mass[0]
+v[0] = v0
+z[0] = z0
+t[0] = t0
+vrel[0] = vrel0 # 0
+beta[0] = Ab*rhow*vrel[0] # 0
+massw[0] = massw0 
+Vw[0] = massw[0]/rhow 
+Vair[0] = Vbottle - (h[0] - z[0])*Area
+Pair[0] = nkBT/Vair[0]
+h[0] = Vw[0]/Area
+Fthrust[0] = vrel[0]*beta[0]
+
+for j in numpy.arange(timesteps) :
+    massw[j+1] = massw[j] - beta[j]*dt
+    if z[j] <= h[0]:
+        Vair[j+1] = Vbottle - (h[0] - z[j])*Area - Vw[0]
+        Pair[j+1] = nkBT/Vair[j+1]
+        Fthrust[j+1] = Pair[j+1]/Ab
+    if massw[j+1] > 0:
+        beta[j+1] = Ab*rhow*vrel[j]        
+        Vw[j+1] = massw[j+1]/rhow
+        Vair[j+1] = Vbottle - Vw[j+1]
+        Pair[j+1] = nkBT/Vair[j+1]
+        h[j+1] = Vw[j+1]/Area   
+        vrel[j+1] = (2*  (Pair[j+1]-P0 + (g+a[j])*rhow*h[j+1])   /   (rhow*(1-  (Ab**2)  / (Area**2) )))**0.5
+        mass[j+1] = mass[j] - beta[j+1]*dt + massr
+        Fthrust[j+1] = vrel[j+1]*beta[j+1]
+    else:
+        mass[j+1] = massr
+        Fthrust[j+1] = 0
+    F[j+1] = - mass[j+1]*g - 0.5*rhoa*Cd*Area*v[j+1]*abs(v[j+1]) + Fthrust[j+1]  
+    a[j+1] = F[j+1]/mass[j+1]
+    v[j+1] = v[j] + dt*a[j]   
+    z[j+1] = z[j] + dt*v[j] + dt*dt*a[j]/2
+    t[j+1] = t[j] + dt
+    if j==timesteps :
+        break
+    if z[j] < 0 and j > 0:
+       a[j] = 0
+       v[j] = 0
+       z[j] = 0
+    
+# z[j] is slightly smaller than 0 at timesteps=0 
+# assumed that the collision with the ground is completely inelastic      
+   
+
+
+print("last array position calculated = " + str(j))
+
+z.resize(j+1)
+v.resize(j+1)
+a.resize(j+1)
+F.resize(j+1)
+time.resize(j+1)
+
+# Height subplot
+ax1=pylab.subplot(3,1,1)
+pylab.plot(time,z,'k*')
+pylab.xlabel('time (s)')
+pylab.ylabel('height (m)')
+
+# Velocity subplot
+ax2=pylab.subplot(3,1,2)
+pylab.plot(time,v,'k*')
+pylab.xlabel('time (s)')
+pylab.ylabel('velocity (m/s)')
+
+# Acceleration subplot
+ax3=pylab.subplot(3,1,3)
+pylab.plot(time,a,'k*')
+pylab.xlabel('time (s)')
+pylab.ylabel('acceleration (m/s$^2$)')
+
+path_figures = os.path.join(dest_dir, timestamp + 'freefall_wDrag.png')
+pylab.savefig(path_figures)
+pylab.show()
+
+
+dataarray=numpy.array([time, z, v, a]).T            
+path_dataarray = os.path.join(dest_dir, timestamp + 'data_array.txt')
+numpy.savetxt(path_dataarray, dataarray, header='time, z, v, a')
