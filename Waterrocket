@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
+"""
+Created on Wed Nov  4 13:40:56 2015
 
+@author: merlijn
+"""
 
 print(__file__)
 import numpy
@@ -20,25 +24,32 @@ print("the model started running at time:  " + timestamp + "  (YearMoDa-HrMnSc)"
 
 ## Parameters
 
-g = 9.81 # (m/s^2)          # roughly constant acceleration due to gravity on earth's surface
-Cd = 0.5 # (dimensionless)  # drag coefficient
-dt = 0.0001 # (s)           # time step
-duration = 5 # (s)          # total time for simulation
-z0 = 0 # (m)                # initial height
-v0 = 0 # (m/s)              # initial velocity (vertical direction)
-t0 = 0 # (s)                # starting time
-massr = 0.289 # (kg)        # mass rocket
-rhow = 1000 # (kg/m^3)      # density water
-massw0 = 0.7 # (kg)         # initial mass of water inside the bottle
-rhoa = 1.225 # (kg/m^3)     # density of air
-Pair0 = 800000 # (N/m)      # initial pressure of air inside the bottle, 8 bar
-Ab = 0.002 # (m^3)          # area of the bottlecap
-Area = 0.038 # (m^3)        # (initial) area of the water level and the crossectional area of the rocket
-beta0 = 0 # (kg/t)          # initial dm/dt
-vrel0 = 0 # (m/s)           # initial vrel
-nkBT = 400 # (m^3*Pa)       # constant factor of the moles of air inside the rocket, the Boltzman constant and the temperature of the air
-P0 =  101325 # (Pa)         # normal atmospheric pressure
-Vbottle = 0.001 #(m^3)      # total volume of the bottle
+g = 9.81 # (m/s^2)                          # roughly constant acceleration due to gravity on earth's surface
+Area = 0.038 # (m^2)                        # cross-sectional area??
+rhoa = 1.225 # (kg/m^3)                     # density of air
+rhow = 1000 #kg/m^3                         # density water
+Cd = 0.5 # (dimensionless)                  # drag coefficient
+dt = 0.0001 # (s)                           # time step
+duration = 20 # (s)                         # total time for simulation
+z0 = 0 # (m)                                # initial height
+v0 = 0 # (m/s)                              # initial velocity (vertical direction)
+vrel = 50 # (m/s)                           # velocity of mass relative to the rocket????
+vrel0 = 0                                   # initial Jet velocity ????
+beta = 0.010 # (kg/s)                       # dm/dt
+tlater = 5 # (s)                            # thrust time, beta goes to zero afterwards
+t0 = 0 # (s)                                # starting time
+Vair0 = 0.0005 # (m^3)                      # Initial volume of air 
+Pair0 = 800000 # N/m                        # Initial pressure of air, 8 bar
+massw0 = 0.7 #kg                            # Initial mass of water
+Ab = 0.002 #m^3                             # Area of the bottle opening
+beta0 = 0                                   # dM/dt 
+massr = 0.289 # kg                          # mas of rocket body
+n = 2000                                    # no of air molecules*Boltzmann's constant*temperature of air 
+Vw0 = 0.0007 # m^3                          # Initial volume of water
+Vbottle = 0.001                             # Total volume of bottle
+P0 =  101325 # Pa                           # normal atmospheric pressure
+h0 = 0.18                                   # initial height of water in bottle
+
 
 #parameters = g, mass0, area, rho, Cd, dt, duration, z0, v0, vrel, beta, tlater, t0
 #path_parameters = os.path.join(dest_dir, timestamp + 'parameters_used.txt')  
@@ -66,13 +77,13 @@ a[0] = F[0]/mass[0]
 v[0] = v0
 z[0] = z0
 t[0] = t0
+beta[0] = beta0
+Vair[0] = Vair0
+Pair[0] = Pair0
 vrel[0] = vrel0
-beta[0] = Ab*rhow*vrel[0]
 massw[0] = massw0
-Vw[0] = massw[0]/rhow
-Vair[0] = Vbottle - Vw[0]
-Pair[0] = nkBT/Vair[0]
-h[0] = Vw[0]/Area
+Vw[0] = Vw0
+h[0] = h0
 
 for j in numpy.arange(timesteps) :
     massw[j+1] = massw[j] - beta[j]*dt
@@ -80,7 +91,7 @@ for j in numpy.arange(timesteps) :
         beta[j+1] = Ab*rhow*vrel[j]        
         Vw[j+1] = massw[j+1]/rhow
         Vair[j+1] = Vbottle - Vw[j+1]
-        Pair[j+1] = nkBT/Vair[j+1]
+        Pair[j+1] = n/Vair[j+1]
         h[j+1] = Vw[j+1]/Area   
         vrel[j+1] = (2*  (Pair[j+1]-P0 + (g+a[j])*rhow*h[j+1])   /   (rhow*(1-  (Ab**2)  / (Area**2) )))**0.5
         mass[j+1] = mass[j] - beta[j+1]*dt + massr
@@ -97,7 +108,6 @@ for j in numpy.arange(timesteps) :
        a[j] = 0
        v[j] = 0
        z[j] = 0
-    
 # z[j] is slightly smaller than 0 at timesteps=0 
 # assumed that the collision with the ground is completely inelastic      
    
