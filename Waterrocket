@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+
 print(__file__)
 import numpy
 import pylab
@@ -19,37 +20,25 @@ print("the model started running at time:  " + timestamp + "  (YearMoDa-HrMnSc)"
 
 ## Parameters
 
-g = 9.81 # (m/s^2)                          # roughly constant acceleration due to gravity on earth's surface
-area = 0.01 # (m^2)                          # cross-sectional area
-rho = 1.225 # (kg/m^3)                       # density of fluid (approximate density of air)
-Cd = 0.5 # (dimensionless)                   # drag coefficient
-dt = 0.0001 # (s)                             # time step
-duration = 20 # (s)                         # total time for simulation
-z0 = 0 # (m)                                 # initial height
-v0 = 0 # (m/s)                               # initial velocity (vertical direction)
-vrel = 50 #(m/s)                             # velocity of mass relative to the rocket
-beta = 0.010 #(kg/s)                         # dm/dt
-tlater = 5 # (s)                             # thrust time, beta goes to zero afterwards
-t0 = 0 # (s)                                 # starting time
-rhow = 1000 #kg/m^3                          # density water
-Vair0 = 0.0005 # m^3
-Pair0 = 800000 # N/m
-massw0 = 0.7 #kg
-Ab = 0.002 #m^3
-Area = 0.038 #m^3
-beta0 = 0
-vrel0 = 0
-massr = 0.289 # kg
-n = 400
-Vw0 = 0.0007 # m^3                          # total volume of the bottle
-rhow = 1000 # K/m^3                          # density water
-rhoa = 1.225 #K/m^3                            # density air                                 # temperature
-Area = 0.038 # (m^2)                         # cross-sectional area 
-Ab = 0.002 # m^3                             # area of the bottle opening
-P0 =  101325 # Pa                            # normal atmospheric pressure
-Pair0 = 800000 # Pa                          # air pressure inside the bottle, 8 bar
-h0 = 0.18
-Vbottle = 0.001
+g = 9.81 # (m/s^2)          # roughly constant acceleration due to gravity on earth's surface
+Cd = 0.5 # (dimensionless)  # drag coefficient
+dt = 0.0001 # (s)           # time step
+duration = 5 # (s)          # total time for simulation
+z0 = 0 # (m)                # initial height
+v0 = 0 # (m/s)              # initial velocity (vertical direction)
+t0 = 0 # (s)                # starting time
+massr = 0.289 # (kg)        # mass rocket
+rhow = 1000 # (kg/m^3)      # density water
+massw0 = 0.7 # (kg)         # initial mass of water inside the bottle
+rhoa = 1.225 # (kg/m^3)     # density of air
+Pair0 = 800000 # (N/m)      # initial pressure of air inside the bottle, 8 bar
+Ab = 0.002 # (m^3)          # area of the bottlecap
+Area = 0.038 # (m^3)        # (initial) area of the water level and the crossectional area of the rocket
+beta0 = 0 # (kg/t)          # initial dm/dt
+vrel0 = 0 # (m/s)           # initial vrel
+nkBT = 400 # (m^3*Pa)       # constant factor of the moles of air inside the rocket, the Boltzman constant and the temperature of the air
+P0 =  101325 # (Pa)         # normal atmospheric pressure
+Vbottle = 0.001 #(m^3)      # total volume of the bottle
 
 #parameters = g, mass0, area, rho, Cd, dt, duration, z0, v0, vrel, beta, tlater, t0
 #path_parameters = os.path.join(dest_dir, timestamp + 'parameters_used.txt')  
@@ -72,18 +61,18 @@ Vw = numpy.zeros(timesteps+1,dtype='d')
 h = numpy.zeros(timesteps+1,dtype='d')
 
 mass[0] = massr + massw0
-F[0] = - mass[0]*g - 0.5*rho*Cd*area*v[0]*abs(v[0]) + vrel[0]*beta[0] 
+F[0] = - mass[0]*g - 0.5*rhoa*Cd*Area*v[0]*abs(v[0]) + vrel[0]*beta[0] 
 a[0] = F[0]/mass[0]
 v[0] = v0
 z[0] = z0
 t[0] = t0
-beta[0] = beta0
-Vair[0] = Vair0
-Pair[0] = Pair0
 vrel[0] = vrel0
+beta[0] = Ab*rhow*vrel[0]
 massw[0] = massw0
-Vw[0] = Vw0
-h[0] = h0
+Vw[0] = massw[0]/rhow
+Vair[0] = Vbottle - Vw[0]
+Pair[0] = nkBT/Vair[0]
+h[0] = Vw[0]/Area
 
 for j in numpy.arange(timesteps) :
     massw[j+1] = massw[j] - beta[j]*dt
@@ -91,13 +80,13 @@ for j in numpy.arange(timesteps) :
         beta[j+1] = Ab*rhow*vrel[j]        
         Vw[j+1] = massw[j+1]/rhow
         Vair[j+1] = Vbottle - Vw[j+1]
-        Pair[j+1] = n/Vair[j+1]
+        Pair[j+1] = nkBT/Vair[j+1]
         h[j+1] = Vw[j+1]/Area   
         vrel[j+1] = (2*  (Pair[j+1]-P0 + (g+a[j])*rhow*h[j+1])   /   (rhow*(1-  (Ab**2)  / (Area**2) )))**0.5
         mass[j+1] = mass[j] - beta[j+1]*dt + massr
     else:
         mass[j+1] = massr
-    F[j+1] = - mass[j+1]*g - 0.5*rho*Cd*area*v[j+1]*abs(v[j+1]) + vrel[j+1]*beta[j+1]  
+    F[j+1] = - mass[j+1]*g - 0.5*rhoa*Cd*Area*v[j+1]*abs(v[j+1]) + vrel[j+1]*beta[j+1]  
     a[j+1] = F[j+1]/mass[j+1]
     v[j+1] = v[j] + dt*a[j]   
     z[j+1] = z[j] + dt*v[j] + dt*dt*a[j]/2
@@ -108,6 +97,7 @@ for j in numpy.arange(timesteps) :
        a[j] = 0
        v[j] = 0
        z[j] = 0
+    
 # z[j] is slightly smaller than 0 at timesteps=0 
 # assumed that the collision with the ground is completely inelastic      
    
