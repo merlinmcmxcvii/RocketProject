@@ -1,0 +1,93 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Nov  4 19:28:41 2015
+
+@author: merlijn
+"""
+
+print(__file__)
+import numpy
+import pylab
+from datetime import datetime
+import os
+script_dir = os.path.dirname(os.path.abspath(__file__))
+dest_dir = os.path.join(script_dir, 'data')
+try:
+    os.makedirs(dest_dir)
+except OSError:
+    pass 
+pylab.clf() 
+timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")   
+
+print("Model started running at time:  " + timestamp + "  (YearMoDa-HrMnSc)")
+
+#Parameters programme, have to be changed
+duration = 1000
+dt1 = 0.1
+dt2 = dt1*0.5
+
+#Formulas in programme
+timesteps = numpy.int(duration/dt1)    
+time = numpy.arange(timesteps+1,dtype='d')*dt1          
+z1 = numpy.arange(timesteps+1,dtype='d')*dt1
+z2 = numpy.arange(timesteps+1,dtype='d')*dt2
+z3 = numpy.arange(timesteps+1,dtype='d')*dt2
+difference = numpy.arange(timesteps+1,dtype='d')*dt1
+
+#Starting values in programmes
+z1[0] = 0
+z2[0] = 0
+z3[0] = 0
+difference[0] = 0
+
+#z1 and z2 are the functions to calculate the position of the rocket over time, 
+#z1 has the normal timestep and z2 has half that timestep. The programme calculates z1 and z3 (two timesteps of z2)
+# and then divides the two to get the difference
+# the difference should be less than 0.1, e.i. less than ten percent. 
+# if it is bigger than ten percent, the programme gives the timestep at which it is bigger.
+# if the difference is bigger than the maximum difference until then (and smaller than 0.1)
+# this difference is saved in 'max difference', which the programme returns at the end of the programme.
+
+for j in numpy.arange(timesteps):
+    z1[j+1] = dt1 + z1[j] #Normal programme
+    z2[j+1] = dt2 + z3[j] #New programme with .5dt + .5dt
+    z3[j+1] = z2[j+1] + dt2 
+    difference[j+1] = abs(z1[j+1]/z3[j+1] - 1) #fraction between normal and .5dt+.5dt programme
+    maxdifference = 0 
+    if j==timesteps-1:  #ends programme if difference is not bigger than 0.1
+        print (" ")
+        print ("Difference of dt and .5dt is not bigger than 10%")
+        print ("Max difference: " + str(difference[j+1]))
+        break
+    elif difference[j+1] > 0.1: #ends programme if difference is bigger than 0.1 and gives that timestep
+        print 'difference: ' + str(difference[j+1])
+        print 'timestep: ' + str(j)
+        break
+    elif difference[j+1] > maxdifference : #saves the maximum difference
+        maxdifference = difference
+    
+z1.resize(j+1)
+z2.resize(j+1)
+z3.resize(j+1)
+time.resize(j+1)
+difference.resize(j+1)
+
+# Height 1 subplot
+ax1=pylab.subplot(3,1,1)
+pylab.plot(time,z1,'k*')
+pylab.xlabel('time (s)')
+pylab.ylabel('height 1 (m)')  
+
+# Height 2 subplot
+ax1=pylab.subplot(3,1,2)
+pylab.plot(time,z3,'k*')
+pylab.xlabel('time (s)')
+pylab.ylabel('height 2 (m)')  
+
+# Difference subplot
+ax1=pylab.subplot(3,1,3)
+pylab.plot(time,difference,'k*')
+pylab.xlabel('time')
+pylab.ylabel('difference (fraction)') 
+    
+    
