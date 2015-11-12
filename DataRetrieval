@@ -1,75 +1,32 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Nov 12 16:32:17 2015
 
-@author: budeskils25
-"""
-
-#  This program imports acceleration data from the accelerometer data file.
-#
-#  It groups that data into numpy arrays,
-#   creates a corresponding time array,
-#   and plots the raw x, y, and z axis acceleration versus time.
-#
-#  This file does NOT convert the raw accelerometer data into units of [m/s/s].  You must write extra code to do this, using your own calibration.
-#
-#  The code file is named "inefficient" because the list.append process takes the computer more time than other data import methods.
-#  Luckily, computers don't complain if you give them clear tasks, so as long as you have some patience, this file should work just fine.
-#
-#  You are welcome to use this file (or code herein) to help you to analyze the acceleration data and to find the apparent velocity and position versus time.
-
-
-# Import a couple libraries for the data analysis and plotting functions
 import numpy
 import pylab
 
-
-# Ask for the name of the file to be opened, and save that name for the Open file command:
 filename = raw_input('Please type in the name of the data file you wish to use:  ')
 if filename[-4:] != '.txt' :
   print('\n You forgot to include the .txt file extension in your filename!  \n But, don\'t worry, the program was written to automatically add it ;) \n')
   filename += '.txt'
 
-# Open file as "f", which is then acted upon below:
 f = open(filename, 'r')
 
-# Read and then ignore header line(s)  , just one in this case
 header1 = f.readline()
 
-# Create empty lists in which to add the data for x, y, and z acceleration
 x = []
 y = []
 z = []
 
 
-# This "For Loop" continues over all the lines and extracts x, y, and z acceleration data
 for line in f:
-    if line[0][0].isdigit():     # If the line begins with a digit, it must include data, which we read in:
+    if line[0][0].isdigit():     
       columns = line.split()
-      x.append(int(columns[2].strip(",")))  # Here we strip commas from the acceleration, and add it to the lists as type "integer"
+      x.append(int(columns[2].strip(",")))  
       y.append(int(columns[3].strip(",")))
       z.append(int(columns[4]))
     else:
       print(' There is a blackout after the '+ str(len(x)) +'th data point')
-#      break      # This "for loop break command" should be commented out if data after a black-out is supposed to also be included
+#      break     
 
-# START OUR CODE 
-'''
-timesteps = numpy.int(len(x))  
-xx = numpy.zeros(timesteps+1,dtype='d')
-yy = numpy.zeros(timesteps+1,dtype='d')
-zz = numpy.zeros(timesteps+1,dtype='d')
-
-for j in len(x):
-    xx[j+1] = x[j]
-    yy[j+1] = y[j]
-    zz[j+1] = z[j]
-    if j == len(x):
-        break
-'''
-# END OUR CODE    
-
-# Now that we're done reading from the file, we close it again to free up computer memory space:
 f.close()
 
 print('\n Your data file included '+ str(len(x)) +' timestamps,') 
@@ -78,24 +35,12 @@ print(' which at 100Hz data rate is about '+ str((len(x))/100) +' seconds of mea
 data_rate_string = raw_input('Please type in the data rate that your accelerometer used (either 100 Hz or 200 Hz):     ')
 datarate = 100*int(data_rate_string[0])  # this simply reads in the first digit that you typed and multiplies by 100 for the data rate in Hz
 
-# Create a time array:
 time = numpy.arange(len(x), dtype='d') / datarate  #  divides by 100 if it's a 100Hz data rate, or 200 for 200Hz
 
-# Instead of a list, we want numpy arrays to more easily analyze and plot the acceleration data because numpy has some shortcut functions for its arrays:
-# (if you're curious about the differences between lists, arrays, and strings, you should ask a computer scientist!)
-# Define a three component list which has the entire x, y, and z accleration arrays as it's three components
 acc_vectors = [numpy.array(x,dtype='i'), numpy.array(y,dtype='i'), numpy.array(z,dtype='i')]  
 xx = numpy.array(x,dtype='i')
 yy = numpy.array(y,dtype='i')
 zz = numpy.array(z,dtype='i')
-# This for loop creates X,Y,&Z-acceleration subplots
-'''
-for i in 0,1,2 :
-  pylab.subplot(3,1,i+1)
-  pylab.plot(time,acc_vectors[i],'k.')
-  pylab.xlabel('time (s)')
-  pylab.ylabel('XYZ'[i] + ' - acceleration \n (arbitrary units)')  #'XYZ'[i] picks out the ith letter in this string 'XYZ'
-'''
 
 ax2=pylab.subplot(3,1,1)
 pylab.plot(time,xx,'k*')
@@ -114,6 +59,5 @@ pylab.ylabel('velocity (m/s)')
 # Display the figure:
 pylab.show()
 
-# in case you want to export your measured/analyzed data to a text file for use in another program: 
 array_to_save = numpy.array([ time , acc_vectors[2] ]).T   #numpy has a transpose feature which turns rows into columns.  With this command we only take the z-axis acceleration
 numpy.savetxt('time-zacc_data.txt', array_to_save, header='time, z_acc')
