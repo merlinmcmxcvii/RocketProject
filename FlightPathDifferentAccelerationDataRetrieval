@@ -12,7 +12,7 @@ try:
 except OSError:
     pass 
 pylab.clf() 
-
+timestamp = datetime.now().strftime("%Y%m%d-%H%M%S") 
 now = datetime.now()
 print("Model started running at %s:%s:%s on %s/%s/%s" % (now.hour, now.minute, now.second, now.day, now.month, now.year))
 
@@ -31,19 +31,19 @@ P0 =  101325 # (Pa)         # normal atmospheric pressure
 
 # Second, all the 'fitting' parameters, parameters that might change
 # after the actual testing of the rocket.
-Cd = 0.8 # (dimensionless)  # drag coefficient
-dt = 0.00001 # (s)           # time step
+Cd = 0.9 # (dimensionless)  # drag coefficient
+dt = 0.00001 # (s)          # time step
 massw0 = 0.541 # (kg)       # initial mass of water inside the bottle
-Ab = 0.000014522 # (m^3)    # area of the bottlecap (r \approx 0.0125)
+Ab = 0.0014522 # (m^3)      # area of the bottlecap (r \approx 0.0125)
 Area = 0.019113 # (m^3)     # (initial) area of the water level and the crossectional area of the rocket. r = 0.06
-NkBT = 150 # (m^3*Pa)       # constant factor of the number of molecules of air inside the rocket, the Boltzman constant and the temperature of the air
+NkBT = 101.35 # (m^3*Pa)       # constant factor of the number of molecules of air inside the rocket, the Boltzman constant and the temperature of the air
 Vbottle = 0.001 #(m^3)      # total volume of the bottle
 #hr = 0.15 # (m)            # height of the rod inside the bottle. 
 
 
 ## Text file with all the parameters
 parameters = g, Cd, dt, duration, z0, v0, t0, massr, rhow, massw0, rhoa, Ab, Area,  vrel0, NkBT, P0, Vbottle
-path_parameters = os.path.join(dest_dir + 'parameters_used.txt')  
+path_parameters = os.path.join(dest_dir + 'parameters_used.txt' + timestamp)  
 numpy.savetxt(path_parameters, parameters, header='g, Cd, dt, duration, z0, v0, t0, massr, rhow, massw0, rhoa, Ab, Area, vrel0, NkBT, P0, Vbottle,  : All dimensions SI units !')
 
 
@@ -88,8 +88,6 @@ maxa = 0
 
 ## ACTUAL FORMULAS
 for j in numpy.arange(timesteps) :
-    if mass[j] < 0.001 and mass[j] > 0:
-        blub = j
     if massw[j] > 0:                # This if-loop calculates the thrust force of the water on the rocket.    
         Vw[j] = massw[j]/rhow
         Vair[j] = Vbottle - Vw[j]
@@ -119,7 +117,7 @@ for j in numpy.arange(timesteps) :
     if v[j+1] > maxv:                # Saves the maximum v value
         maxv = v[j+1]
     if a[j] > maxa:                  # Saves the maximum a value
-        maxa =  a[j+1]     
+        maxa =  a[j]     
 
 
 ## Print the maximum values for the height, velocity and acceleration:
@@ -127,7 +125,7 @@ print (" ")
 print ("Maximum height: " + str(round(maxz, 2)) + " (m)")
 print ("Maximum velocity: " + str(round(maxv, 2)) + " (m/s)")
 print ("Maximum acceleration: " + str(round(maxa, 2)) + " (m/s^2)")
-print ("blub " + str(blub))
+print (" ")
 
 ## prints the last array position calculated:
 print("Last array position calculated = " + str(j))
@@ -199,10 +197,10 @@ pylab.xlabel('time (s)')
 pylab.ylabel('acceleration (m/s$^2$)')
 
 # Saves plots
-path_figures = os.path.join(dest_dir, 'freefall_wDrag.png')
+path_figures = os.path.join(dest_dir, timestamp + 'FlightPath.png')
 pylab.savefig(path_figures)
 pylab.show()
 
 dataarray = numpy.array([time, z, v, a]).T            
-path_dataarray = os.path.join(dest_dir, 'data_array.txt')
+path_dataarray = os.path.join(dest_dir, timestamp + 'data_array.txt')
 numpy.savetxt(path_dataarray, dataarray, header='time, z, v, a')
