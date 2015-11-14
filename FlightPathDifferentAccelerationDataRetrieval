@@ -131,7 +131,7 @@ print (" ")
 print("Last array position calculated = " + str(j))
 print (" ")
 
-'''
+
 ## DATA RETRIEVAL
 filename = raw_input('Please type in the name of the data file you wish to use:  ')
 if filename[-4:] != '.txt' :
@@ -157,6 +157,7 @@ for line in f:
       print(' There is a blackout after the '+ str(len(x)) +'th data point')
 #      break     
 
+
 f.close()
 
 print('\n Your data file included '+ str(len(x)) +' timestamps,') 
@@ -171,7 +172,17 @@ acc_vectors = [numpy.array(x,dtype='i'), numpy.array(y,dtype='i'), numpy.array(z
 xx = numpy.array(x,dtype='i')
 yy = numpy.array(y,dtype='i')
 zz = numpy.array(z,dtype='i')
-'''
+
+## DATA MODIFIYNG
+dt2 = 1/200
+
+timesteps2 = numpy.int(len(z))              
+zreal = numpy.arange(timesteps2+1,dtype='d')             
+time2 = numpy.arange(timesteps2+1,dtype='d')*dt2
+
+for i in len(z):
+    zreal[i] = (zz[i] + 3.114)/(3.297) 
+
 ##PLOTS
 z.resize(j+1)
 v.resize(j+1)
@@ -181,6 +192,7 @@ time.resize(j+1)
 # Height subplot
 ax1=pylab.subplot(3,1,1)
 pylab.plot(time,z,'kx')
+pylab.plot(time2, zreal, 'kx')
 pylab.xlabel('time (s)')
 pylab.ylabel('height (m)')
 
