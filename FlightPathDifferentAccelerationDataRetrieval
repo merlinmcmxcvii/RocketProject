@@ -1,4 +1,44 @@
-##DATA RETRIEVAL
+'''
+This is the code of Louis Lallouette, Katherine Budeski, and Merlijn Kersten for the 
+Introduction to Physics Rocket Lab Experiment, due on Wednesday November 18, 2015. 
+
+In this programme, we calculate the flight path of a rocket. We divide our 
+parameters into normal parameters and fitting parameters: parameters that
+can be changed to make the model data fit the data of our experiment.
+
+In our programme, we used the mass of the water inside of the rocket to calculate 
+other properties, like the pressure, volume, and top-area, of the air and water
+inside of the rocket.
+
+We also wrote another programme that calculates the effect of taking a time step
+twice as small as the chosen time step. Thus, we can calculate of this changes the
+final outcome by more than 10%, e.g. if changing the timestep has a significant
+effect on the final outcome. We send this programme to you via email. 
+
+This code doesn't take the angle at which the rocket is fired into account:
+currently it assumes it is fired straight up into the air (90 degree angle with 
+the horizon) 
+    It also doens't take the additional thrust force of  the escaping air out of 
+rocket after the all the water is fired out into account. (This is because at that
+moment, the air pressure inside the rocket is still higher than normal atmospheric
+pressure). However, this influence is very small so this probably wouldn't have
+a significant effect on the outcome of our model.
+
+The template for this programme was provided by dr. Forrest Bradbury, some of his
+code is still in this programme (mainly the ##MODULES ET CETERA and the ##PLOTS code). 
+Much of the other code is based on the provided template code.
+
+If you have any questions regarding this code, please feel free to contact us:
+tibestinorilsk@gmail.com
+
+Note: none of us had any experience with coding in Python when we started this 
+project. This might mean that we made some style or other errors in our Python
+language. If we did, we're very sorry. Please show us our mistakes and we'll try to not make them next time.
+
+'''
+
+
+
 ## MODULES ET CETERA
 print(__file__)
 import numpy
@@ -14,6 +54,7 @@ except OSError:
 pylab.clf() 
 timestamp = datetime.now().strftime("%Y%m%d-%H%M%S") 
 now = datetime.now()
+print (" ")
 print("Model started running at %s:%s:%s on %s/%s/%s" % (now.hour, now.minute, now.second, now.day, now.month, now.year))
 
 ## PARAMETERS
@@ -28,17 +69,16 @@ rhow = 1000 # (kg/m^3)      # density water
 rhoa = 1.225 # (kg/m^3)     # density of air
 vrel0 = 0 # (m/s)           # initial vrel
 P0 =  101325 # (Pa)         # normal atmospheric pressure
-
-# Second, all the 'fitting' parameters, parameters that might change
-# after the actual testing of the rocket.
-Cd = 0.9 # (dimensionless)  # drag coefficient
 dt = 0.00001 # (s)          # time step
 massw0 = 0.541 # (kg)       # initial mass of water inside the bottle
 Ab = 0.0014522 # (m^3)      # area of the bottlecap (r \approx 0.0125)
 Area = 0.019113 # (m^3)     # (initial) area of the water level and the crossectional area of the rocket. r = 0.06
-NkBT = 101.35 # (m^3*Pa)       # constant factor of the number of molecules of air inside the rocket, the Boltzman constant and the temperature of the air
 Vbottle = 0.001 #(m^3)      # total volume of the bottle
-#hr = 0.15 # (m)            # height of the rod inside the bottle. 
+
+# Second, all the 'fitting' parameters, parameters that we could not measure during the
+# experiment and thus try to choose in such a way that our model 'fits' the real data.
+Cd = 0.9 # (dimensionless)  # drag coefficient
+NkBT = 101.35 # (m^3*Pa)    # constant factor of the number of molecules of air inside the rocket, the Boltzman constant and the temperature of the air
 
 
 ## Text file with all the parameters
@@ -67,6 +107,7 @@ Fthrust = numpy.zeros(timesteps+1,dtype='d')
 
 
 ## STARTING VALUES OF THE FUNCTIONS
+#time[0] = 100
 mass[0] = massr + massw0
 F[0] = - mass[0]*g - 0.5*rhoa*Cd*Area*v[0]*abs(v[0]) + vrel[0]*beta[0] 
 a[0] = F[0]/mass[0]
@@ -88,6 +129,10 @@ maxa = 0
 
 ## ACTUAL FORMULAS
 for j in numpy.arange(timesteps) :
+    #if j<10:
+    #    z[j] = 0
+    #    a[j] = 0
+    #    v[j] = 0
     if massw[j] > 0:                # This if-loop calculates the thrust force of the water on the rocket.    
         Vw[j] = massw[j]/rhow
         Vair[j] = Vbottle - Vw[j]
@@ -109,109 +154,183 @@ for j in numpy.arange(timesteps) :
     if j==timesteps :               # This if-loop breaks the for-loop if the experiment time has ended.
         break
     elif z[j] < 0 and j > 0:        # This elif-loop lets a, v, and x go to 0 if the rocket hits the ground. (inelastic collision)
-        a[j] = 0
-        v[j] = 0
-        z[j] = 0
-    if z[j+1] > maxz:                # Saves the maximum z value
+        break
+    if z[j+1] > maxz:                # Saves the maximum value for z
         maxz = z[j+1]
-    if v[j+1] > maxv:                # Saves the maximum v value
+    if v[j+1] > maxv:                # Saves the maximum value for v
         maxv = v[j+1]
-    if a[j] > maxa:                  # Saves the maximum a value
+    if a[j] > maxa:                  # Saves the maximum value for a
         maxa =  a[j]     
 
 
-## Print the maximum values for the height, velocity and acceleration:
-print (" ")
-print ("Maximum height: " + str(round(maxz, 2)) + " (m)")
-print ("Maximum velocity: " + str(round(maxv, 2)) + " (m/s)")
-print ("Maximum acceleration: " + str(round(maxa, 2)) + " (m/s^2)")
-print (" ")
-
-## prints the last array position calculated:
-print("Last array position calculated = " + str(j))
-print (" ")
 
 
 ## DATA RETRIEVAL
-filename = raw_input('Please type in the name of the data file you wish to use:  ')
-if filename[-4:] != '.txt' :
-  print('\n You forgot to include the .txt file extension in your filename!  \n But, don\'t worry, the program was written to automatically add it ;) \n')
-  filename += '.txt'
 
-f = open(filename, 'r')
+#filename = raw_input('Please type in the name of the data file you wish to use:  ')
+#if filename[-4:] != '.txt' :
+#  print('\n You forgot to include the .txt file extension in your filename!  \n But, don\'t worry, the program was written to automatically add it ;) \n')
+#  filename += '.txt'
+#f = open(filename, 'r')
+## UNCOMMENT THIS SECTION BEFORE HANDING IN THE CODE
+
+
+# This line of code was used to open the data file on our computer.
+f = open("/Users/merlijn/Google Drive/Rocket Lab/Data files/DataExperiment111115EDITED.txt", 'r')
 
 header1 = f.readline()
 
-x = []
-y = []
-z = []
+xxx = []    #Empty array for the x-axis experiment data
+yyy = []    #Empty array for the y-axis experiment data
+zzz = []    #Empty array for the z-axis experiment data
 
 
 for line in f:
     if line[0][0].isdigit():     
       columns = line.split()
-      x.append(int(columns[2].strip(",")))  
-      y.append(int(columns[3].strip(",")))
-      z.append(int(columns[4]))
+      xxx.append(int(columns[2].strip(",")))  
+      yyy.append(int(columns[3].strip(",")))
+      zzz.append(int(columns[4]))
     else:
-      print(' There is a blackout after the '+ str(len(x)) +'th data point')
+      print(' There is a blackout after the '+ str(len(xxx)) +'th data point')
 #      break     
-
 
 f.close()
 
-print('\n Your data file included '+ str(len(x)) +' timestamps,') 
-print(' which at 100Hz data rate is about '+ str((len(x))/100) +' seconds of measuring time.') 
+datarate = 200
 
-data_rate_string = raw_input('Please type in the data rate that your accelerometer used (either 100 Hz or 200 Hz):     ')
-datarate = 100*int(data_rate_string[0])
+time3 = numpy.arange(int(len(xxx)), dtype='d') / datarate    # We used a 200 Hz sensor
 
-time = numpy.arange(len(x), dtype='d') / datarate 
+# Make numpy arrays of the x, y, and z data lists. 
+acc_vectors = [numpy.array(xxx,dtype='i'), numpy.array(yyy,dtype='i'), numpy.array(zzz,dtype='i')]  
+xx = numpy.array(xxx,dtype='i')
+yy = numpy.array(yyy,dtype='i')
+zz = numpy.array(zzz,dtype='i')
 
-acc_vectors = [numpy.array(x,dtype='i'), numpy.array(y,dtype='i'), numpy.array(z,dtype='i')]  
-xx = numpy.array(x,dtype='i')
-yy = numpy.array(y,dtype='i')
-zz = numpy.array(z,dtype='i')
 
-## DATA MODIFIYNG
-dt2 = 1/200
 
-timesteps2 = numpy.int(len(z))              
+
+
+## EXPERIMENT DATA MODIFIYNG
+dt2 = 0.005     # Timestep of a 200 Hz sensor
+arealmax = 0    
+vrealmax = 0
+zrealmax = 0
+
+timesteps2 = numpy.int(778)              
+time2 = numpy.arange(timesteps+1,dtype='d')*dt2           
+areal = numpy.arange(timesteps2+1,dtype='d') 
+vreal = numpy.arange(timesteps2+1,dtype='d') 
 zreal = numpy.arange(timesteps2+1,dtype='d')             
-time2 = numpy.arange(timesteps2+1,dtype='d')*dt2
+           
+areal[0] = 0
+vreal[0] = 0
+zreal[0] = 0
 
-for i in numpy.arange(timesteps2):
-    zreal[i] = (zz[i] + 3.114)/(3.297) 
+for i in range(len(zzz)):
+    areal[i] = zz[i]*0.3033 -8.8655    # Calculates the real acceleration value with calibration data
+    vreal[i+1] = areal[i]*dt2 + vreal[i]
+    zreal[i+1] = vreal[i+1]*dt2 + 0.5*areal[i]*dt2*dt2 + zreal[i]
+    if areal[i] > arealmax:                 # Saves the maximum value of areal
+        arealmax = areal[i]
+    if vreal[i+1] > vrealmax:               # Saves the maximum value of vreal
+        vrealmax = vreal[i+1]
+    if zreal[i+1] > zrealmax:
+        zrealmax = zreal[i+1]               # Saves the maximum value of zreal
+    if i == 770:
+        break
+    elif zreal[i+1] < 0:
+        break
+    
+
+
+## Print the maximum values for the height, velocity and acceleration:
+print (" ")
+print ("MODEL DATA")
+print (" Maximum height: " + str(round(maxz, 2)) + " (m)")
+print (" Maximum velocity: " + str(round(maxv, 2)) + " (m/s)")
+print (" Maximum acceleration: " + str(round(maxa, 2)) + " (m/s^2)")
+print (" Last array position calculated = " + str(j))
+print (" ")
+print ("REAL DATA")
+print (" Maximum height: " + str(round(zrealmax, 2)) + " (m)")
+print (" Maximum velocity: " + str(round(vrealmax, 2)) + " (m/s)")
+print (" Maximum acceleration: " + str(round(arealmax, 2)) + " (m/s^2)")
+print (" ")  
+print('\n Your data file included '+ str(len(xxx)) +' timestamps,') 
+print(' which at 200Hz data rate is about '+ str((len(xxx))/200) +' seconds of measuring time.') 
+print (" ")  
+    
+
+
+
+    
 
 ##PLOTS
 z.resize(j+1)
 v.resize(j+1)
 a.resize(j+1)
+zreal.resize(i+1)
+vreal.resize(i+1)
+areal.resize(i+1)
 time.resize(j+1)
+time2.resize(i+1)
 
 # Height subplot
 ax1=pylab.subplot(3,1,1)
-pylab.plot(time,z,'kx')
-pylab.plot(time2, zreal, 'kx')
+pylab.plot(time,z,'g-')
+pylab.plot(time2, zreal, 'b-')
 pylab.xlabel('time (s)')
 pylab.ylabel('height (m)')
+pylab.title('Height versus time plot')
+pylab.xlim(0, 3)
+pylab.ylim(0, 10)
+plot1 = pylab.plot(time,z,'g-')
+plot2 = pylab.plot(time2, zreal, 'b-')
+#pylab.legend((plot1, plot2), ('model', 'experiment'), 'best', numpoints=1)
 
 # Velocity subplot
 ax2=pylab.subplot(3,1,2)
-pylab.plot(time,v,'kx')
+pylab.plot(time,v,'g-')
+pylab.plot(time2, vreal, 'b-')
 pylab.xlabel('time (s)')
 pylab.ylabel('velocity (m/s)')
+pylab.title('Velocity versus time plot')
+pylab.xlim(0, 3)
+pylab.ylim(-15, 20)
+plot3 = pylab.plot(time,v,'g-')
+plot4 = pylab.plot(time2, vreal, 'b-')
+#pylab.legend((plot3, plot4), ('model', 'experiment'), 'best', numpoints=1)
 
 # Acceleration subplot
 ax3=pylab.subplot(3,1,3)
-pylab.plot(time,a,'kx')
+pylab.plot(time,a,'g-')
+pylab.plot(time2, areal, 'b-')
 pylab.xlabel('time (s)')
 pylab.ylabel('acceleration (m/s$^2$)')
+pylab.title('Acceleration versus time plot')
+pylab.xlim(0, 3)
+pylab.ylim(-10, 1200)
+plot5 = pylab.plot(time,a,'g-')
+plot6 = pylab.plot(time2, areal, 'b-')
+#pylab.legend((plot5, plot6), ('model', 'experiment'), 'best', numpoints=1)
 
 # Saves plots
 path_figures = os.path.join(dest_dir, timestamp + 'FlightPath.png')
 pylab.savefig(path_figures)
 pylab.show()
+
+'''
+PLOTTING:
+Green for real data, red for model data. 
+
+FIX LEGEND
+FIX CALIBRATION Z
+
+DELETE THIS COMMENT BEFORE HANDING IN
+'''
+
+
 dataarray = numpy.array([time, z, v, a]).T            
 path_dataarray = os.path.join(dest_dir, timestamp + 'data_array.txt')
 numpy.savetxt(path_dataarray, dataarray, header='time, z, v, a')
